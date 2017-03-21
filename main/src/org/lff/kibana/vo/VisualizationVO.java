@@ -6,6 +6,19 @@ package org.lff.kibana.vo;
 public class VisualizationVO {
     private String id;
     private int panelIndex;
+
+    @Override
+    public String toString() {
+        return "VisualizationVO{" +
+                "id='" + id + '\'' +
+                ", panelIndex=" + panelIndex +
+                ", size_x=" + size_x +
+                ", size_y=" + size_y +
+                ", col=" + col +
+                ", row=" + row +
+                '}';
+    }
+
     private int size_x;
     private int size_y;
     private int col;

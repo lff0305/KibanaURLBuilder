@@ -6,6 +6,15 @@ import java.util.List;
  * Created by liuff on 2017/3/21 22:21
  */
 public class DashboardVO {
+
+    @Override
+    public String toString() {
+        return "DashboardVO{" +
+                "id='" + id + '\'' +
+                ", visualizations=" + visualizations +
+                '}';
+    }
+
     private String id;
 
     public String getId() {

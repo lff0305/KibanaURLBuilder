@@ -37,6 +37,7 @@ public class KibanaService {
         JSONObject dashboard = get(KIBANA_URL, "dashboard", String.format(search, dashboardName));
         try {
             DashboardVO vo = validateAndParse(dashboard);
+            logger.info("Get Dashboad vo {}", vo);
         } catch (JSONException e) {
             throw new RuntimeException("Not a valid result. Dashboard name not correct ?", e);
         }
