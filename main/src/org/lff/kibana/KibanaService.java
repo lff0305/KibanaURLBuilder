@@ -66,7 +66,7 @@ public class KibanaService {
         url += ",";
         url += buildQuery();
         url += ",";
-        url += buildTitle(vo.getId());
+        url += buildTitle(vo.getTitle());
         url += ")"; //end _a
         return url;
     }
@@ -74,12 +74,28 @@ public class KibanaService {
     private String buildTitle(String title) {
         try {
             String s = URLEncoder.encode(title, "UTF-8");
+            s = escapeURIPathParam(s);
             return String.format("title:'%s',uiState:()", s);
         } catch (UnsupportedEncodingException e) {
             logger.error("Failed to encodeurl", e);
             return null;
         }
     }
+
+    public static String escapeURIPathParam(String input) {
+        int len = input.length();
+        String result = "";
+        for (int i=0; i<len; i++) {
+            char c = input.charAt(i);
+            if (c == '+') {
+                result += "%20";
+                continue;
+            }
+            result += c;
+        }
+        return result;
+    }
+
 
     private String buildQuery() {
         // query:(query_string:(analyze_wildcard:!t,query:'*'))
@@ -110,10 +126,12 @@ public class KibanaService {
             throw new RuntimeException("Total is not 1");
         }
         JSONArray hitsArray = hits.getJSONArray("hits");
-        JSONObject source = hitsArray.getJSONObject(0);
+        JSONObject hit0 = hitsArray.getJSONObject(0);
         DashboardVO vo = new DashboardVO();
-        vo.setId(source.getString("_id"));
-        List<VisualizationVO> visualizations = getVisualizations(source.getJSONObject("_source"));
+        vo.setId(hit0.getString("_id"));
+        JSONObject source = hit0.getJSONObject("_source");
+        vo.setTitle(source.getString("title"));
+        List<VisualizationVO> visualizations = getVisualizations(source);
         vo.setVisualizations(visualizations);
         return vo;
     }
