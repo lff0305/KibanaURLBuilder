@@ -10,7 +10,9 @@ import org.lff.kibana.vo.VisualizationVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,9 +23,9 @@ public class KibanaService {
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    public static String KIBANA_URL = "http://10.16.33.175:9200/.kibana/%s/_search";
+    public static String ELASTICSEARCH_URL = "http://10.16.33.175:9200/.kibana/%s/_search";
 
-    public JSONObject build(String dashboardName) {
+    public String build(String dashboardName, String kibanaURL) {
         String search =
                 "{\n" +
                         "   \"query\": {\n" +
@@ -34,14 +36,71 @@ public class KibanaService {
                         "      }\n" +
                         "   }\n" +
                         "}";
-        JSONObject dashboard = get(KIBANA_URL, "dashboard", String.format(search, dashboardName));
+        JSONObject dashboard = get(ELASTICSEARCH_URL, "dashboard", String.format(search, dashboardName));
         try {
             DashboardVO vo = validateAndParse(dashboard);
-            logger.info("Get Dashboad vo {}", vo);
+            logger.info("Get Dashboard vo {}", vo);
+            return build(kibanaURL, vo);
         } catch (JSONException e) {
             throw new RuntimeException("Not a valid result. Dashboard name not correct ?", e);
         }
-        return dashboard;
+    }
+
+    private String build(String kibanaURL, DashboardVO vo) {
+        String url = kibanaURL + "/app/kibana#/dashboard/" + vo.getId() + "?embed=true";
+        url += "&_g=(refreshInterval:(display:Off,pause:!f,value:0),time:(from:now-15m,mode:quick,to:now))";
+        url += "&_a=(";
+        url += "filters:!(),options:(darkTheme:!f),";
+        url += "panels:!(";
+        boolean first = true;
+        for (VisualizationVO panel : vo.getVisualizations()) {
+            if (!first) {
+                url += ",";
+            }
+            first = false;
+            url += "(";
+            url += buildPanel(panel);
+            url += ")";
+        }
+        url += ")"; //end panels
+        url += ",";
+        url += buildQuery();
+        url += ",";
+        url += buildTitle(vo.getId());
+        url += ")"; //end _a
+        return url;
+    }
+
+    private String buildTitle(String title) {
+        try {
+            String s = URLEncoder.encode(title, "UTF-8");
+            return String.format("title:'%s',uiState:()", s);
+        } catch (UnsupportedEncodingException e) {
+            logger.error("Failed to encodeurl", e);
+            return null;
+        }
+    }
+
+    private String buildQuery() {
+        // query:(query_string:(analyze_wildcard:!t,query:'*'))
+        String s = "query:";
+        s += "(";
+        s += "query_string:(analyze_wildcard:!t,query:'*')";
+        s += ")";
+        return s;
+    }
+
+    private String buildPanel(VisualizationVO panel) {
+        // (col:1,id:New-Visualization,panelIndex:1,row:1,size_x:3,size_y:3,type:visualization)
+        String s = "";
+        s += "col:" + panel.getCol();
+        s += ",id:" + panel.getId();
+        s += ",panelIndex:" + panel.getPanelIndex();
+        s += ",row:" + panel.getRow();
+        s += ",size_x:" + panel.getSize_x();
+        s += ",size_y:" + panel.getSize_y();
+        s += ",type:visualization";
+        return s;
     }
 
     private DashboardVO validateAndParse(JSONObject dashboard) throws JSONException {
@@ -91,9 +150,8 @@ public class KibanaService {
     private static JSONObject get(String kibanaUrl, String path, String data) {
         HttpResponse response = HttpUtil.send(String.format(kibanaUrl, path), data);
         if (response.getCode() != 200) {
-            System.out.println(response.getResponse());
         } else {
-            System.out.println(response.getResponse());
+            logger.error(response.getResponse());
         }
 
         try {
