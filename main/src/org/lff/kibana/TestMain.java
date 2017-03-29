@@ -1,5 +1,6 @@
 package org.lff.kibana;
 
+import org.lff.kibana.vo.DateRangeVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +16,8 @@ public class TestMain {
     public static void main(String[] argu) {
         KibanaService service = new KibanaService();
         String dashboard = "New-Dashboard";
-        String url = service.build(dashboard, "http://10.16.33.175:5601");
+        DateRangeVO dateRangeVO = new DateRangeVO();
+        String url = service.build(dashboard, "http://10.16.33.175:5601", dateRangeVO);
         logger.info("Get URL for {} is {}", dashboard, url);
     }
 }

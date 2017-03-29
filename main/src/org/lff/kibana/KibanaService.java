@@ -6,6 +6,7 @@ import org.json.JSONObject;
 import org.lff.http.HttpResponse;
 import org.lff.http.HttpUtil;
 import org.lff.kibana.vo.DashboardVO;
+import org.lff.kibana.vo.DateRangeVO;
 import org.lff.kibana.vo.VisualizationVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +26,7 @@ public class KibanaService {
 
     public static String ELASTICSEARCH_URL = "http://10.16.33.175:9200/.kibana/%s/_search";
 
-    public String build(String dashboardName, String kibanaURL) {
+    public String build(String dashboardName, String kibanaURL, DateRangeVO dateRangeVO) {
         String search =
                 "{\n" +
                         "   \"query\": {\n" +
@@ -40,15 +41,17 @@ public class KibanaService {
         try {
             DashboardVO vo = validateAndParse(dashboard);
             logger.info("Get Dashboard vo {}", vo);
-            return build(kibanaURL, vo);
+            return build(kibanaURL, vo, dateRangeVO);
         } catch (JSONException e) {
             throw new RuntimeException("Not a valid result. Dashboard name not correct ?", e);
         }
     }
 
-    private String build(String kibanaURL, DashboardVO vo) {
+    private String build(String kibanaURL, DashboardVO vo, DateRangeVO dateRangeVO) {
         String url = kibanaURL + "/app/kibana#/dashboard/" + vo.getId() + "?embed=true";
-        url += "&_g=(refreshInterval:(display:Off,pause:!f,value:0),time:(from:now-15m,mode:quick,to:now))";
+        url += "&_g=(refreshInterval:(display:Off,pause:!f,value:0),";
+        url += buildDateRange(dateRangeVO);
+        url += ")";
         url += "&_a=(";
         url += "filters:!(),options:(darkTheme:!f),";
         url += "panels:!(";
@@ -69,6 +72,15 @@ public class KibanaService {
         url += buildTitle(vo.getTitle());
         url += ")"; //end _a
         return url;
+    }
+
+    private String buildDateRange(DateRangeVO dateRangeVO) {
+        String s = "time:(from:";
+        s += dateRangeVO.getFrom() + ",";
+        s += "mode:quick,";
+        s += "to:now";
+        s += ")";
+        return s;
     }
 
     private String buildTitle(String title) {
