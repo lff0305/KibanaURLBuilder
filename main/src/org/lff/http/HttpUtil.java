@@ -33,7 +33,7 @@ public class HttpUtil {
             .setConnectionManager(cm)
             .build();
 
-    public static HttpResponse send(String url, String data) {
+    public static HttpResponse post(String url, String data) {
 
         HttpContext context = HttpClientContext.create();
         HttpPost httpost = null;
@@ -62,6 +62,10 @@ public class HttpUtil {
                     result.append(line);
                 }
             } catch (Exception e) {
+                HttpResponse r = new HttpResponse();
+                r.setCode(code);
+                r.setResponse(result.toString());
+                return r;
             }
 
             HttpResponse r = new HttpResponse();
@@ -69,7 +73,10 @@ public class HttpUtil {
             r.setResponse(result.toString());
             return r;
         } catch (Exception e) {
-            return null;
+            HttpResponse r = new HttpResponse();
+            r.setCode(600);
+            r.setResponse(e.getMessage());
+            return r;
         } finally {
             try {
                 if (httpost != null) {

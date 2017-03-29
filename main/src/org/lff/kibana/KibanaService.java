@@ -24,9 +24,8 @@ public class KibanaService {
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    public static String ELASTICSEARCH_URL = "http://10.16.33.175:9200/.kibana/%s/_search";
-
-    public String build(String dashboardName, String kibanaURL, DateRangeVO dateRangeVO) {
+    public String build(String dashboardName, String elasticSearchUrl, String kibanaURL, DateRangeVO dateRangeVO) {
+        elasticSearchUrl += "/.kibana/%s/_search";
         String search =
                 "{\n" +
                         "   \"query\": {\n" +
@@ -37,7 +36,10 @@ public class KibanaService {
                         "      }\n" +
                         "   }\n" +
                         "}";
-        JSONObject dashboard = get(ELASTICSEARCH_URL, "dashboard", String.format(search, dashboardName));
+        JSONObject dashboard = get(elasticSearchUrl, "dashboard", String.format(search, dashboardName));
+        if (dashboard == null) {
+            return null;
+        }
         try {
             DashboardVO vo = validateAndParse(dashboard);
             logger.info("Get Dashboard vo {}", vo);
@@ -178,10 +180,18 @@ public class KibanaService {
     }
 
     private static JSONObject get(String kibanaUrl, String path, String data) {
-        HttpResponse response = HttpUtil.send(String.format(kibanaUrl, path), data);
-        if (response.getCode() != 200) {
+        String url = String.format(kibanaUrl, path);
+        HttpResponse response = HttpUtil.post(url, data);
+        if (response.getCode() == 200) {
+            // successful
         } else {
-            logger.error(response.getResponse());
+            if (response.getCode() == 600) {
+                logger.error("Exception when posting to {} {}", url, response.getResponse());
+                return null;
+            }
+            logger.error("Invalid response code {} {}", response.getCode(),
+                    response.getResponse());
+            return null;
         }
 
         try {

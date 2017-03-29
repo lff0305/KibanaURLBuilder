@@ -17,7 +17,7 @@ public class TestMain {
         KibanaService service = new KibanaService();
         String dashboard = "New-Dashboard";
         DateRangeVO dateRangeVO = new DateRangeVO();
-        String url = service.build(dashboard, "http://10.16.33.175:5601", dateRangeVO);
+        String url = service.build(dashboard, "http://10.16.33.175:9200", "http://10.16.33.175:5601", dateRangeVO);
         logger.info("Get URL for {} is {}", dashboard, url);
     }
 }
